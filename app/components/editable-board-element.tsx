@@ -8,27 +8,35 @@ import {
 } from 'react-draggable';
 import { clamp } from '../utils/index';
 import { ResizeDirection } from '../types';
+import { createContext } from 'react';
 
 export function useUniqueId(prefix = 'drag-item'): string {
   const id = useId();
   return `${prefix}-${id.replace(/:/g, '-')}`;
 }
 interface EditableBoardElementProps {
+  children: React.ReactNode;
+  divProps?: React.HTMLAttributes<HTMLDivElement>;
   minHeight?: number;
   minWidth?: number;
-  className?: string;
   bounds?: { t: number; r: number; b: number; l: number };
   position?: { x: number; y: number };
 }
 
+export const EditableBoardElementContext = createContext({
+  isDragging: false,
+  hasRightParent: false,
+});
+
 const EditableBoardElement = ({
+  children,
+  divProps,
   minHeight = 100,
   minWidth = 100,
-  className = '',
   bounds = { t: -Infinity, r: Infinity, b: Infinity, l: -Infinity },
-  position = { x: 0, y: 0 }
+  position = { x: 0, y: 0 },
 }: EditableBoardElementProps): React.JSX.Element => {
-  const uniqueId = useUniqueId();
+  const uniqueId = useUniqueId(); // Remove id if not needed
   const boardElementRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef<{ x: number; y: number }>({
     x: position.x,
@@ -39,11 +47,23 @@ const EditableBoardElement = ({
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    positionRef.current = { x: clamp(position.x, bounds.l, bounds.r - size.width), y: clamp(position.y, bounds.t, bounds.b - size.height) };
+    positionRef.current = {
+      x: clamp(position.x, bounds.l, bounds.r - size.width),
+      y: clamp(position.y, bounds.t, bounds.b - size.height),
+    };
     if (boardElementRef.current) {
       boardElementRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
     }
-  }, [bounds.l, bounds.r, bounds.t, bounds.b, position.x, position.y, size.width, size.height]);
+  }, [
+    bounds.l,
+    bounds.r,
+    bounds.t,
+    bounds.b,
+    position.x,
+    position.y,
+    size.width,
+    size.height,
+  ]);
 
   const getBoundedCoordinates = (
     x: number,
@@ -116,7 +136,9 @@ const EditableBoardElement = ({
         newHeight = clamp(
           boardElementRef.current.offsetHeight - e.movementY,
           minHeight,
-          boardElementRef.current.offsetHeight + positionRef.current.y - bounds.t
+          boardElementRef.current.offsetHeight +
+            positionRef.current.y -
+            bounds.t
         );
         newY = clamp(
           (positionRef.current.y ?? 0) + e.movementY,
@@ -149,7 +171,9 @@ const EditableBoardElement = ({
         newX = clamp(
           (positionRef.current.x ?? 0) + e.movementX,
           bounds.l,
-          (positionRef.current.x ?? 0) + boardElementRef.current.offsetWidth - minWidth
+          (positionRef.current.x ?? 0) +
+            boardElementRef.current.offsetWidth -
+            minWidth
         );
       }
       positionRef.current = { x: newX, y: newY };
@@ -176,41 +200,40 @@ const EditableBoardElement = ({
 
   return (
     <>
-      <DraggableCore
-        nodeRef={boardElementRef}
-        cancel=".resize-bar"
-        onStart={handleDragStart}
-        onDrag={handleDrag}
-        onStop={handleDragStop}
-        handle=".handle"
+      <EditableBoardElementContext.Provider
+        value={{ isDragging, hasRightParent: true }}
       >
-        <div
-          ref={boardElementRef}
-          id={uniqueId}
-          className={`flex flex-col border border-gray-400 shadow-lg ${className}`}
-          style={{
-            width: `${size.width}px`,
-            height: `${size.height}px`,
-            backgroundColor: '#0ff000',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            boxSizing: 'border-box',
-          }}
+        <DraggableCore
+          nodeRef={boardElementRef}
+          cancel=".resize-bar"
+          onStart={handleDragStart}
+          onDrag={handleDrag}
+          onStop={handleDragStop}
+          handle=".handle"
         >
           <div
-            className={`w-full h-8 bg-amber-500 handle ${
-              isDragging ? 'cursor-grabbing' : 'cursor-grab'
-            }`}
+            {...divProps}
+            ref={boardElementRef}
+            id={uniqueId}
+            className={`border border-gray-400 shadow-lg ${divProps?.className}`}
+            style={{
+              ...divProps?.style,
+              width: `${size.width}px`,
+              height: `${size.height}px`,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              boxSizing: 'border-box',
+            }}
           >
-            Drag Handle
+            {children}
+            <ResizeBars
+              onResize={handleResize}
+              onResizeStop={handleResizeStop}
+            />
           </div>
-          <div className="w-full flex-1">
-            <button onClick={() => console.log('click Works bb')}>CTA</button>
-          </div>
-          <ResizeBars onResize={handleResize} onResizeStop={handleResizeStop} />
-        </div>
-      </DraggableCore>
+        </DraggableCore>
+      </EditableBoardElementContext.Provider>
     </>
   );
 };
