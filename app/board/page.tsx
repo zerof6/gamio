@@ -2,21 +2,18 @@
 import { useState } from 'react';
 import EditableBoardElement from '../components/editable-board-element';
 import DragHandler from '../components/drag-handler';
+import { BoardElement } from '@/app/types'
 
-interface BoardElement {
-  id: string;
-  type: 'div';
-  data: any;
-}
 const Page = (): React.JSX.Element => {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [boardElements, setBoardElements] = useState<Array<BoardElement>>([
     {
       id: '1',
-      type: 'div',
-      data: { bgColor: '#0ff000', bounds: { t: 50, r: 400, b: 400, l: 50 } },
+      class: 'cla',
+      data: { bgColor: '#0ff000' },
+      bounds: { t: 50, r: 400, b: 400, l: 50 }
     },
-    { id: '2', type: 'div', data: {} },
+    { id: '2', class: 'clb', data: {} },
   ]);
 
   const setActiveElement = (id: string | null) => () => {
@@ -26,10 +23,10 @@ const Page = (): React.JSX.Element => {
   return (
     <main>
       <div>
-        {boardElements.map((element) => (
+        {boardElements.map((element, idx) => (
           <EditableBoardElement
             key={element.id}
-            bounds={element.data.bounds}
+            bounds={element.bounds}
             divProps={{
               className: `flex flex-col`,
               style: {
@@ -38,6 +35,7 @@ const Page = (): React.JSX.Element => {
             }}
             active={activeElementId === element.id}
             onActive={setActiveElement(element.id)}
+            index={idx + 1}
           >
             <DragHandler active={activeElementId === element.id}>
               <div className="w-full h-8 bg-amber-500">Drag Handle</div>

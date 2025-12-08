@@ -23,6 +23,7 @@ interface EditableBoardElementProps {
   position?: { x: number; y: number };
   active?: boolean;
   onActive?: () => void;
+  index: number;
 }
 
 export const EditableBoardElementContext = createContext({
@@ -38,7 +39,8 @@ const EditableBoardElement = ({
   bounds = { t: -Infinity, r: Infinity, b: Infinity, l: -Infinity },
   position = { x: 0, y: 0 },
   active = false,
-  onActive = () => {},
+  onActive = () => { },
+  index,
 }: EditableBoardElementProps): React.JSX.Element => {
   const uniqueId = useUniqueId(); // Remove id if not needed
   const boardElementRef = useRef<HTMLDivElement>(null);
@@ -232,7 +234,7 @@ const EditableBoardElement = ({
               position: 'absolute',
               top: 0,
               left: 0,
-              zIndex: active ? 99 : 9,
+              zIndex: active ? 99 + index : 9 + index,
               boxSizing: 'border-box',
             }}
           >
