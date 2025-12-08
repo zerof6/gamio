@@ -21,6 +21,8 @@ interface EditableBoardElementProps {
   minWidth?: number;
   bounds?: { t: number; r: number; b: number; l: number };
   position?: { x: number; y: number };
+  active?: boolean;
+  onActive?: () => void;
 }
 
 export const EditableBoardElementContext = createContext({
@@ -35,6 +37,8 @@ const EditableBoardElement = ({
   minWidth = 100,
   bounds = { t: -Infinity, r: Infinity, b: Infinity, l: -Infinity },
   position = { x: 0, y: 0 },
+  active = false,
+  onActive = () => {},
 }: EditableBoardElementProps): React.JSX.Element => {
   const uniqueId = useUniqueId(); // Remove id if not needed
   const boardElementRef = useRef<HTMLDivElement>(null);
@@ -93,6 +97,7 @@ const EditableBoardElement = ({
   };
 
   const handleDragStart = (_e: DraggableEvent, _data: DraggableData) => {
+    if (!active) return;
     setIsDragging(true);
   };
 
@@ -113,10 +118,12 @@ const EditableBoardElement = ({
   };
 
   const handleDrag = (e: DraggableEvent, data: DraggableData) => {
+    if (!active) return;
     drag(e, data);
   };
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
+    if (!active) return;
     const { x, y } = drag(e, data, true)!;
     positionRef.current = { x, y };
     setIsDragging(false);
@@ -124,7 +131,7 @@ const EditableBoardElement = ({
 
   const handleResize = useCallback(
     (e: MouseEvent, direction: ResizeDirection) => {
-      if (!boardElementRef.current) return;
+      if (!active || !boardElementRef.current) return;
 
       let newWidth = boardElementRef.current.offsetWidth;
       let newHeight = boardElementRef.current.offsetHeight;
@@ -181,11 +188,12 @@ const EditableBoardElement = ({
       boardElementRef.current.style.width = `${newWidth}px`;
       boardElementRef.current.style.transform = `translate(${newX}px, ${newY}px)`;
     },
-    [minHeight, minWidth, bounds.t, bounds.r, bounds.b, bounds.l]
+    [minHeight, minWidth, bounds.t, bounds.r, bounds.b, bounds.l, active]
   );
 
   const handleResizeStop = useCallback(
     (_e: MouseEvent, _direction: ResizeDirection) => {
+      if (!active) return;
       setSize((prev) =>
         !boardElementRef.current
           ? prev
@@ -205,17 +213,18 @@ const EditableBoardElement = ({
       >
         <DraggableCore
           nodeRef={boardElementRef}
-          cancel=".resize-bar"
+          cancel={active ? undefined : '.handle'}
           onStart={handleDragStart}
           onDrag={handleDrag}
           onStop={handleDragStop}
           handle=".handle"
         >
           <div
+          onClick={onActive}
             {...divProps}
             ref={boardElementRef}
             id={uniqueId}
-            className={`border border-gray-400 shadow-lg ${divProps?.className}`}
+            className={`${active ? "border border-gray-400 shadow-lg" : ""} ${divProps?.className}`}
             style={{
               ...divProps?.style,
               width: `${size.width}px`,
@@ -223,6 +232,7 @@ const EditableBoardElement = ({
               position: 'absolute',
               top: 0,
               left: 0,
+              zIndex: active ? 99 : 9,
               boxSizing: 'border-box',
             }}
           >
@@ -230,6 +240,7 @@ const EditableBoardElement = ({
             <ResizeBars
               onResize={handleResize}
               onResizeStop={handleResizeStop}
+              active={active}
             />
           </div>
         </DraggableCore>

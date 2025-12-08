@@ -6,6 +6,7 @@ interface ResizeBarsProps {
   onResize: (e: MouseEvent, direction: ResizeDirection) => void;
   onResizeStop?: (e: MouseEvent, direction: ResizeDirection) => void;
   barThickness?: number;
+  active: boolean;
 }
 
 /**
@@ -56,6 +57,7 @@ const ResizeBars = ({
   onResize,
   onResizeStop,
   barThickness = 3,
+  active,
 }: ResizeBarsProps): React.JSX.Element => {
   const activeDirectionRef = useRef<ResizeDirection | null>(null);
 
@@ -71,6 +73,7 @@ const ResizeBars = ({
   });
 
   useEffect(() => {
+    if (!active) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (activeDirectionRef.current) {
         onResize(e, activeDirectionRef.current);
@@ -126,7 +129,7 @@ const ResizeBars = ({
       window.removeEventListener('mouseup', handleMouseUp);
       activeDirectionRef.current = null;
     };
-  }, [onResizeStart, onResize, onResizeStop]);
+  }, [onResizeStart, onResize, onResizeStop, active]);
 
   const barMargin = -(barThickness / 2);
 
@@ -149,6 +152,7 @@ const ResizeBars = ({
           position: absolute;
           background-color: transparent !important;
           z-index: 100;
+          cursor: ${active ? 'inherit' : 'default !important'};
         }
 
         .top-resize-bar,

@@ -1,7 +1,7 @@
 import React, { forwardRef, useContext } from "react";
 import { EditableBoardElementContext } from "./editable-board-element";
-const DragHandler = forwardRef<HTMLDivElement, { children: React.ReactNode }>(
-  function DragHandler({ children }, ref) {
+const DragHandler = forwardRef<HTMLDivElement, { children: React.ReactNode, active: boolean }>(
+  function DragHandler({ children, active }, ref) {
     const { isDragging, hasRightParent } = useContext(EditableBoardElementContext);
 
     if (!hasRightParent) {
@@ -11,7 +11,7 @@ const DragHandler = forwardRef<HTMLDivElement, { children: React.ReactNode }>(
     return (
       <div
         ref={ref}
-        className={`handle ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`handle ${!active? "cursor-default" : isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       >
         {children}
       </div>
