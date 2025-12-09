@@ -24,6 +24,7 @@ interface EditableBoardElementProps {
   active?: boolean;
   onActive?: () => void;
   index: number;
+  grid?:{ x: number; y: number };
 }
 
 export const EditableBoardElementContext = createContext({
@@ -41,6 +42,7 @@ const EditableBoardElement = ({
   active = false,
   onActive = () => { },
   index,
+  grid,
 }: EditableBoardElementProps): React.JSX.Element => {
   const uniqueId = useUniqueId(); // Remove id if not needed
   const boardElementRef = useRef<HTMLDivElement>(null);
@@ -98,6 +100,16 @@ const EditableBoardElement = ({
     });
   };
 
+  const snapToGridX = (x: number): number => {
+    if (!grid) return x;
+    return Math.round(x / grid.x) * grid.x;
+  }
+
+  const snapToGridY = (y: number): number => {
+    if (!grid) return y;
+    return Math.round(y / grid.y) * grid.y;
+  }
+
   const handleDragStart = (_e: DraggableEvent, _data: DraggableData) => {
     if (!active) return;
     setIsDragging(true);
@@ -142,43 +154,47 @@ const EditableBoardElement = ({
       const directions = direction.split('-');
 
       if (directions.includes('top')) {
+        const deltaY= snapToGridY(positionRef.current.y - e.clientY);
         newHeight = clamp(
-          boardElementRef.current.offsetHeight - e.movementY,
+          boardElementRef.current.offsetHeight + deltaY,
           minHeight,
           boardElementRef.current.offsetHeight +
             positionRef.current.y -
             bounds.t
         );
         newY = clamp(
-          (positionRef.current.y ?? 0) + e.movementY,
+          newY - deltaY,
           bounds.t,
-          (positionRef.current.y ?? 0) +
+          positionRef.current.y +
             boardElementRef.current.offsetHeight -
             minHeight
         );
       }
       if (directions.includes('right')) {
+        const deltaX= snapToGridX(e.clientX - (positionRef.current.x + newWidth));
         newWidth = clamp(
-          boardElementRef.current.offsetWidth + e.movementX,
+          boardElementRef.current.offsetWidth + deltaX,
           minWidth,
           bounds?.r - (positionRef.current.x ?? 0)
         );
       }
       if (directions.includes('bottom')) {
+        const deltaY= snapToGridY(e.clientY - (positionRef.current.y + newHeight));
         newHeight = clamp(
-          boardElementRef.current.offsetHeight + e.movementY,
+          boardElementRef.current.offsetHeight + deltaY,
           minHeight,
           bounds?.b - (positionRef.current.y ?? 0)
         );
       }
       if (directions.includes('left')) {
+        const deltaX= snapToGridX(positionRef.current.x - e.clientX);
         newWidth = clamp(
-          boardElementRef.current.offsetWidth - e.movementX,
+          boardElementRef.current.offsetWidth + deltaX,
           minWidth,
           boardElementRef.current.offsetWidth + positionRef.current.x - bounds.l
         );
         newX = clamp(
-          (positionRef.current.x ?? 0) + e.movementX,
+          newX - deltaX,
           bounds.l,
           (positionRef.current.x ?? 0) +
             boardElementRef.current.offsetWidth -
@@ -220,6 +236,7 @@ const EditableBoardElement = ({
           onDrag={handleDrag}
           onStop={handleDragStop}
           handle=".handle"
+          grid={grid?[grid.x, grid.y]: undefined}
         >
           <div
           onClick={onActive}
